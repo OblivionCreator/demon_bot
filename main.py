@@ -164,9 +164,6 @@ def insert_returns(body):
 @bot.command(name='eval')
 @commands.is_owner()
 async def eval_fn(ctx, *, cmd):
-
-    '''Evaluates Input. Restricted to OblivionCreator only.'''
-    
     fn_name = "_eval_expr"
 
     cmd = cmd.strip("` ")
@@ -190,6 +187,9 @@ async def eval_fn(ctx, *, cmd):
         '__import__': __import__
     }
     exec(compile(parsed, filename="<ast>", mode="exec"), env)
+
+    result = (await eval(f"{fn_name}()", env))
+
 
 
 @bot.command(name='kick', aliases=['yeet'])
@@ -254,7 +254,7 @@ async def _ban(ctx, user='', *args):
     await ctx.send(f"User {member} has been banned for {banReason}.")
 
 
-@bot.command(name='mute')
+@bot.command(name='mute', aliases=['gag', 'silence', 'shutup'])
 async def _mute(ctx, user):
     '''Mutes a specified user.'''
     await ctx.message.delete()
@@ -379,6 +379,10 @@ async def unmute(ctx, user):
     for file in glob.glob(f"mutes/{member.id}_*"):
         os.remove(file)
 
+
+@bot.command(name='clearwarns', aliases=['forgive', 'pardon'])
+async def _clearwarns(ctx, user):
+    pass
 
 @bot.command(name='announce', aliases=['a'])
 async def _announce(ctx, channel: discord.TextChannel, title, *args):
