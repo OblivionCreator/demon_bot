@@ -2,6 +2,8 @@ import glob
 import math
 import os
 import random
+from datetime import datetime
+
 import discord
 from discord import guild, File
 from discord.ext import commands
@@ -21,13 +23,20 @@ token = file.read()
 intents = discord.Intents.default()
 intents.members = True
 
-print("DemonBot v.01 Online!")
+print("DemonBot v1.02 Online!")
 
 bot = commands.Bot(
     command_prefix=['o!', 'demon!'],
     intents=intents,
     case_insensitive=True
 )
+
+
+@bot.check
+async def globally_block_dms(ctx):
+    if ctx.guild is None:
+        await ctx.author.send("You should do this in the server, you know.")
+    return ctx.guild is not None
 
 
 def checkMember(ctx, userID):
@@ -89,7 +98,6 @@ async def _warn(ctx, user='', *args):
 
 @bot.command(name='checkwarns', aliases=['warncheck', 'checkwarn', 'warns', 'badtokens'])
 async def _warnCheck(ctx, user):
-
     '''Views the warnings of a specified user.'''
 
     await ctx.message.delete()
@@ -191,10 +199,8 @@ async def eval_fn(ctx, *, cmd):
     result = (await eval(f"{fn_name}()", env))
 
 
-
 @bot.command(name='kick', aliases=['yeet'])
-async def _kick(ctx, user=''):
-
+async def _kick(ctx, user='',  *args):
     '''Kicks a specified user.'''
 
     await ctx.message.delete()
@@ -217,13 +223,25 @@ async def _kick(ctx, user=''):
         await ctx.send("That is not a valid Discord user!")
         return
 
-    await ctx.guild.kick(user=user)
+    reason = ''
+    reasonT = ''
+
+    try:
+        for a in args:
+            reasonT = ' '.join(args)
+    except:
+        reasonT = 'Invalid Syntax!'
+
+    reason = f"{reasonT} [Kicked By {ctx.author} ({ctx.author.id}]"
+
+    await cmdLogger(member=user, reason=reason, func='Kick', activator=ctx.author)
+
+    await ctx.guild.kick(user=user, reason=reason)
     await ctx.send(f"User {user} has been kicked.")
 
 
 @bot.command(name='ban', aliases=['banish'])
 async def _ban(ctx, user='', *args):
-
     '''Bans a specified user.'''
 
     await ctx.message.delete()
@@ -241,8 +259,15 @@ async def _ban(ctx, user='', *args):
     except:
         pass
 
-    tup = args
-    banReason = ' '.join(tup)
+    banReason = ''
+
+    try:
+        for a in args:
+            banReason = ' '.join(args)
+    except:
+        banReason = 'Invalid Syntax!'
+
+    banReason = f"{banReason} [Banned by {ctx.author}]"
 
     try:
         member = await bot.fetch_user(user)
@@ -250,12 +275,14 @@ async def _ban(ctx, user='', *args):
         await ctx.send("That is not a valid Discord user!")
         return
 
+
     await ctx.guild.ban(user=member, reason=banReason)
+    await cmdLogger(member=member, reason=banReason, func='Ban', activator=ctx.author)
     await ctx.send(f"User {member} has been banned for {banReason}.")
 
 
 @bot.command(name='mute', aliases=['gag', 'silence', 'shutup'])
-async def _mute(ctx, user):
+async def _mute(ctx, user, *args):
     '''Mutes a specified user.'''
     await ctx.message.delete()
 
@@ -382,46 +409,131 @@ async def unmute(ctx, user):
 
 @bot.command(name='clearwarns', aliases=['forgive', 'pardon'])
 async def _clearwarns(ctx, user):
-    pass
+    '''Removes all warnings for the specified user.'''
+
+    await ctx.message.delete()
+
+    try:
+        user = ctx.message.mentions[0].id
+    except:
+        pass
+
+    waRe = 0
+
+    for file in glob.glob(f"warns/{user}_*"):
+        os.remove(file)
+        waRe = waRe + 1
+
+    if waRe == 0:
+        await ctx.send("There was no warnings to remove!")
+    else:
+        plural = 's'
+        if (waRe == 1): plural = ''
+        await ctx.send(f"Successfully removed {waRe} warning{plural}!")
+
 
 @bot.command(name='announce', aliases=['a'])
-async def _announce(ctx, channel: discord.TextChannel, title, *args):
-
+async def _announce(ctx, channel: discord.TextChannel, title, content):
     '''Sends an announcement to the specified channel.
-    USAGE:
-    o!announce/a "<TITLE>" <ANNOUNCEMENT CONTENT>
 
     For Example
-    o!announce #general "Generic Announcement" This is a generic announcement!
+    o!announce #general "Generic Announcement" "This is a generic announcement!"
 
-    The announcement may not contain any quotes (" or ') or it will error out.
+    Both the Title and Content fields have to be put in quotes, or it will not work!
 
     '''
 
     await ctx.message.delete()
 
-
-
     if not ctx.message.author.guild_permissions.manage_messages:
         await ctx.send("You do not have permission to perform this action!")
         return
 
-    anStr = ' '.join(args)
-
-    mentionList = []
-
-    print(mentionList)
-
-    print(channel, title, *args)
+    print(channel, title, content)
     emA = discord.Embed(title=title,
-                        description=anStr, color=0xff0000)
+                        description=content, color=0xff0000)
 
     await channel.send(embed=emA)
 
     pass
 
+
 @_announce.error
 async def _announce_error(ctx, args):
-    await ctx.send("Unable to send announcement! Please check your formatting is correct. For more help, please do o!help announce")
+    await ctx.send(
+        "Unable to send announcement! Please check your formatting is correct. For more help, please do o!help announce")
+
+
+## Mod Log Stuff ##
+
+async def sendLog(embed, data):
+    channel = bot.get_channel(770145741682638848)
+    await channel.send(data, embed=embed)
+
+
+@bot.event
+async def on_member_join(member): # On Member Join - Shows how old their account is and warns if new account.
+    data = f":inbox_tray: `{(datetime.now()).strftime('%Y-%m-%d %H:%M:%S')}` `[Member Join]`: {member} ({member.id}) {member.mention}"
+
+    newM = ''
+
+    print(member.created_at.day)
+
+    if member.created_at.day < 7:
+        newM = " :warning: New Account! "
+
+    embedV = discord.Embed(title=f"{member.guild.member_count} Members", description=f"Account Created On: {member.created_at.strftime('%Y-%m-%d %H:%M:%S')}{newM}", color=0x00ff00)
+
+    await sendLog(embedV, data)
+
+
+@bot.event
+async def on_member_remove(member): # On Member Leave - Tracks who leaves, shows how long they were in the server for.
+    data = f":outbox_tray: `{(datetime.now()).strftime('%Y-%m-%d %H:%M:%S')}` `[Member Remove]`: {member} ({member.id}) <@{member.id}>"
+
+    dur = datetime.now() - member.joined_at
+
+    hours, remainder = divmod(int(dur.total_seconds()), 3600)
+    minutes, seconds = divmod(remainder, 60)
+    days, hours = divmod(hours, 24)
+    weeks, days = divmod(days, 7)
+    months, weeks = divmod(weeks, 4)
+    years, months = divmod(months, 12)
+
+    memTime = f"{minutes}m:{seconds}s"
+    if weeks < 1:
+        memTime = f"{days} Day(s), {hours} Hour(s), {minutes} Minute(s) and {seconds} Seconds"
+    elif weeks >=4:
+        memTime = f"{months} Month(s), {weeks} Week(s), {days} Day(s) and {hours} Hour(s)"
+    elif weeks > 51:
+        memTime = f"{months} Year(s) {weeks} Week(s), {days} Day(s) and {hours} Hour(s)"
+    else:
+        memTime = f"{weeks} Week(s), {days} Day(s), {hours} Hour(s) and {minutes} Minutes"
+
+    embedV = discord.Embed(title=f"{member.guild.member_count} Members",
+                           description=f"Member for {memTime}",
+                           color=0xff0000)
+
+    await sendLog(embedV, data)
+
+async def cmdLogger(member, activator, func, reason):
+
+    funcD = func
+
+    if funcD == "Ban":
+        funcD = "Bann"
+        print("Hello!")
+
+        print(func + funcD)
+
+    embLog = discord.Embed(title=f"{func}", description=f"User {member} was {funcD.lower()}ed by {activator} for:\n{reason}", color=0xfd6a02)
+
+    await sendLog(embed=embLog, data='')
+
+
+@bot.event
+async def on_ready():
+    print("Bot Online!")
+
 
 bot.run(token)
