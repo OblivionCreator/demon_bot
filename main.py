@@ -200,7 +200,7 @@ async def eval_fn(ctx, *, cmd):
 
 
 @bot.command(name='kick', aliases=['yeet'])
-async def _kick(ctx, user='',  *args):
+async def _kick(ctx, user='', *args):
     '''Kicks a specified user.'''
 
     await ctx.message.delete()
@@ -274,7 +274,6 @@ async def _ban(ctx, user='', *args):
     except:
         await ctx.send("That is not a valid Discord user!")
         return
-
 
     await ctx.guild.ban(user=member, reason=banReason)
     await cmdLogger(member=member, reason=banReason, func='Ban', activator=ctx.author)
@@ -407,6 +406,132 @@ async def unmute(ctx, user):
         os.remove(file)
 
 
+@bot.command(name='roleban', aliases=['toss', 'dungeon', 'torture'])
+async def roleban(ctx, user):
+    await _stripRoles(ctx, user)
+
+
+async def _stripRoles(ctx, user=0):
+    await ctx.message.delete()
+
+    if not ctx.message.author.guild_permissions.manage_messages:
+        await ctx.send("You do not have permission to perform this action!")
+        return
+
+    validUser = False
+
+    try:
+        user = ctx.message.mentions[0].id
+        validUser = True
+    except:
+        pass
+
+    try:
+        await bot.fetch_user(user)
+    except:
+        await ctx.send("That is not a valid user!")
+        return
+
+    if not validUser:
+
+        if not checkMember(ctx, user):
+            ctx.send("This user has left the server!")
+            return
+        else:
+            validUser = True
+
+    member = getMember(ctx, user)
+
+    roleList = []
+
+    for i in member.roles:
+        if i.name != '@everyone':
+            roleList.append(i)
+            print(i)
+            await member.remove_roles(i)
+
+    addRole = discord.utils.get(member.guild.roles, name="rolebanned")
+    await member.add_roles(addRole)
+
+    for file in glob.glob(f"rolebans/{member.id}_*"):
+        os.remove(file)
+
+    muteFile = f"rolebans/{member.id}_{int(time.time())}.txt"
+
+    f = open(muteFile, "w")
+    for l in roleList:
+        roleID = l.id
+        f.write(str(roleID) + '\n')
+    f.close()
+    print("Rolebanned Member!")
+    print(roleList)
+    await ctx.send(f"User {member} has been rolebanned!")
+
+@bot.command(name='unroleban', aliases=['untoss', 'excuse'])
+async def _unStrip(ctx, user):
+    '''Unrolebans specified user..'''
+
+    if not ctx.message.author.guild_permissions.manage_messages:
+        await ctx.send("You do not have permission to perform this action!")
+        return
+
+    await ctx.message.delete()
+
+    validUser = False
+
+    try:
+        user = ctx.message.mentions[0].id
+        validUser = True
+    except:
+        pass
+
+    try:
+        await bot.fetch_user(user)
+    except:
+        await ctx.send("That is not a valid user!")
+        return
+
+    if not validUser:
+
+        if not checkMember(ctx, user):
+            ctx.send("This user has left the server!")
+            return
+        else:
+            validUser = True
+
+    member = getMember(ctx, user)
+    roles = []
+
+    try:
+        file, = glob.glob(f"rolebans/{user}_*")
+    except:
+        await ctx.send(f"{member} is not rolebanned!")
+        return
+
+    print(file)
+
+    f = open(file)
+
+    roles = f.read().splitlines()
+    for r in roles:
+        print(r)
+        rI = int(r)
+        rG = discord.utils.get(ctx.guild.roles, id=rI)
+        print(rG)
+        if rG:
+            await member.add_roles(rG)
+
+    silRole = discord.utils.get(member.guild.roles, name="rolebanned")
+    await member.remove_roles(silRole)
+
+    f.close()
+
+    await ctx.send(f"{member} has been unrolebanned.")
+
+    for file in glob.glob(f"rolebans/{member.id}_*"):
+        os.remove(file)
+
+
 @bot.command(name='clearwarns', aliases=['forgive', 'pardon'])
 async def _clearwarns(ctx, user):
     '''Removes all warnings for the specified user.'''
@@ -472,7 +597,7 @@ async def sendLog(embed, data):
 
 
 @bot.event
-async def on_member_join(member): # On Member Join - Shows how old their account is and warns if new account.
+async def on_member_join(member):  # On Member Join - Shows how old their account is and warns if new account.
     data = f":inbox_tray: `{(datetime.now()).strftime('%Y-%m-%d %H:%M:%S')}` `[Member Join]`: {member} ({member.id}) {member.mention}"
 
     newM = ''
@@ -482,13 +607,15 @@ async def on_member_join(member): # On Member Join - Shows how old their account
     if member.created_at.day < 7:
         newM = " :warning: New Account! "
 
-    embedV = discord.Embed(title=f"{member.guild.member_count} Members", description=f"Account Created On: {member.created_at.strftime('%Y-%m-%d %H:%M:%S')}{newM}", color=0x00ff00)
+    embedV = discord.Embed(title=f"{member.guild.member_count} Members",
+                           description=f"Account Created On: {member.created_at.strftime('%Y-%m-%d %H:%M:%S')}{newM}",
+                           color=0x00ff00)
 
     await sendLog(embedV, data)
 
 
 @bot.event
-async def on_member_remove(member): # On Member Leave - Tracks who leaves, shows how long they were in the server for.
+async def on_member_remove(member):  # On Member Leave - Tracks who leaves, shows how long they were in the server for.
     data = f":outbox_tray: `{(datetime.now()).strftime('%Y-%m-%d %H:%M:%S')}` `[Member Remove]`: {member} ({member.id}) <@{member.id}>"
 
     dur = datetime.now() - member.joined_at
@@ -503,7 +630,7 @@ async def on_member_remove(member): # On Member Leave - Tracks who leaves, shows
     memTime = f"{minutes}m:{seconds}s"
     if weeks < 1:
         memTime = f"{days} Day(s), {hours} Hour(s), {minutes} Minute(s) and {seconds} Seconds"
-    elif weeks >=4:
+    elif weeks >= 4:
         memTime = f"{months} Month(s), {weeks} Week(s), {days} Day(s) and {hours} Hour(s)"
     elif weeks > 51:
         memTime = f"{months} Year(s) {weeks} Week(s), {days} Day(s) and {hours} Hour(s)"
@@ -516,8 +643,8 @@ async def on_member_remove(member): # On Member Leave - Tracks who leaves, shows
 
     await sendLog(embedV, data)
 
-async def cmdLogger(member, activator, func, reason):
 
+async def cmdLogger(member, activator, func, reason):
     funcD = func
 
     if funcD == "Ban":
@@ -526,7 +653,9 @@ async def cmdLogger(member, activator, func, reason):
 
         print(func + funcD)
 
-    embLog = discord.Embed(title=f"{func}", description=f"User {member} was {funcD.lower()}ed by {activator} for:\n{reason}", color=0xfd6a02)
+    embLog = discord.Embed(title=f"{func}",
+                           description=f"User {member} was {funcD.lower()}ed by {activator} for:\n{reason}",
+                           color=0xfd6a02)
 
     await sendLog(embed=embLog, data='')
 
