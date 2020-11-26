@@ -1,21 +1,12 @@
 import glob
-import math
 import os
-import random
+import threading
 from datetime import datetime
-
 import discord
-from discord import guild, File
 from discord.ext import commands
-import sqlite3
-from sqlite3 import Error
-from collections.abc import Sequence
 import ast
-from dataclasses import dataclass
 import time
 import json
-
-from discord.ext.commands import has_permissions
 
 file = open("token.txt")
 token = file.read()
@@ -279,6 +270,13 @@ async def _ban(ctx, user='', *args):
     await cmdLogger(member=member, reason=banReason, func='Ban', activator=ctx.author)
     await ctx.send(f"User {member} has been banned for {banReason}.")
 
+    guild = ctx.guild
+    purgeMsg = 0
+
+    for c in guild.channels:
+        purgeMsg = purgeMsg + len(await c.purge(limit=75, check=lambda x: (x.author.id == member.id)))
+
+    await ctx.send(f"Purged {purgeMsg} messages belonging to {member}.")
 
 @bot.command(name='mute', aliases=['gag', 'silence', 'shutup'])
 async def _mute(ctx, user, *args):
