@@ -1,12 +1,18 @@
+import asyncio
 import glob
 import os
 import threading
+from discord.ext import tasks
 from datetime import datetime
+from pathlib import Path
+import random
+
 import discord
 from discord.ext import commands
 import ast
 import time
 import json
+import sqlite3
 
 file = open("token.txt")
 token = file.read()
@@ -278,6 +284,7 @@ async def _ban(ctx, user='', *args):
 
     await ctx.send(f"Purged {purgeMsg} messages belonging to {member}.")
 
+
 @bot.command(name='mute', aliases=['gag', 'silence', 'shutup'])
 async def _mute(ctx, user, *args):
     '''Mutes a specified user.'''
@@ -464,6 +471,7 @@ async def _stripRoles(ctx, user=0):
     print("Rolebanned Member!")
     print(roleList)
     await ctx.send(f"User {member} has been rolebanned!")
+
 
 @bot.command(name='unroleban', aliases=['untoss', 'excuse'])
 async def _unStrip(ctx, user):
@@ -658,9 +666,343 @@ async def cmdLogger(member, activator, func, reason):
     await sendLog(embed=embLog, data='')
 
 
+## DemonPoints! ##
+
+database = 'dpoints.db'
+
+
+def create_connection(db_file):
+    conn = None
+    try:
+
+        file = Path(database)
+
+        if file.is_file():
+            conn = sqlite3.connect(db_file)
+        else:
+            print("Database does not exist! Generating new Database")
+            conn = sqlite3.connect(db_file)
+            cur = conn.cursor()
+            sql = '''CREATE TABLE "pointDB" (
+"ownerid"	INTEGER,
+"points"	INTEGER,
+"streak"	INTEGER
+)'''
+            cur.execute(sql)
+            conn.commit()
+
+        print(sqlite3.version)
+    except sqlite3.Error as e:
+        print("Connection Failed! - " + e)
+
+    return conn
+
+
+conn = create_connection(database)
+
+
+@bot.event
+async def on_message(message):
+    dPoints = random.randint(5, 15)
+    lucky = random.randint(1, 50)
+    if lucky == 50:
+        dPoints = dPoints * 2
+
+    if message.author.bot:
+        return
+
+    author = message.author.id
+
+    cur = conn.cursor()
+    sql = '''SELECT * FROM pointDB where ownerid IS ?'''
+    cur.execute(sql, [author])
+    authorData = cur.fetchone()
+
+    if authorData is None:
+        ownerid = author
+        streak = 9
+        fPoints = dPoints * 10
+        sql = '''INSERT INTO pointDB(ownerid, points, streak) VALUES(?,?,?)'''
+        cur.execute(sql, [ownerid, fPoints, streak])
+        conn.commit()
+    else:
+        ownerid, points, streak = authorData
+        points = points + (dPoints * streak)
+        if streak > 1:
+            streak = streak - 1
+        sql = '''UPDATE pointDB SET points = ? WHERE ownerid is ?'''
+        cur.execute(sql, [points, ownerid])
+        sql = '''UPDATE pointDB SET streak = ? WHERE ownerid is ?'''
+        cur.execute(sql, [streak, ownerid])
+
+        conn.commit()
+    await bot.process_commands(message)
+
+
+@tasks.loop(minutes=15)
+async def resStreak():
+    cur = conn.cursor()
+    sql = '''SELECT * FROM pointDB'''
+    cur.execute(sql)
+
+    oldData = cur.fetchall()
+
+    for ownerid, points, streak in oldData:
+        sql = '''UPDATE pointDB SET streak = ? WHERE ownerid is ?'''
+        if streak < 10:
+            streak = 10
+        cur.execute(sql, [streak, ownerid])
+
+    conn.commit()
+
+
+@bot.command()
+async def leaderboard(ctx):
+    cur = conn.cursor()
+    sql = '''SELECT * FROM pointDB ORDER BY points DESC'''
+    cur.execute(sql)
+
+    rawvalue = cur.fetchall()
+
+    embed = discord.Embed(title="Showing Points Leaderboard", description="Top 10 Earners", color=0x007DFF)
+
+    for n in range(10):
+        temp = rawvalue[n]
+        user = ctx.guild.get_member(temp[0])
+        notuser = f'{temp[0]} (User has left server)'
+        embed.add_field(name=f"Position {n + 1}: {user or temp[0]}", value=f"{temp[1]} Points", inline=False)
+
+    await ctx.send("Here are the current rankings.", embed=embed)
+
+def getPointData(user):
+
+    cur = conn.cursor()
+
+    sql = '''SELECT * FROM pointDB WHERE ownerid IS ?'''
+    cur.execute(sql, [user])
+
+    data = cur.fetchone()
+    return data
+
+
+@bot.command()
+async def points(ctx):
+
+    if ctx.message.mentions:
+        user = ctx.message.mentions[0].id
+    else:
+        user = ctx.author.id
+
+    position = getPos(user)
+
+    oID, points, streak = getPointData(user)
+
+    embedP = discord.Embed(name=f"Showing points for <@{user}>", description=f'{points} Points (Position: {position})',
+                           colour=0xFFFA00)
+    await ctx.send(f"Showing points for {ctx.guild.get_member(user) or user}", embed=embedP)
+
+
+def getPos(user):
+    cur = conn.cursor()
+
+    sql = '''SELECT * FROM pointDB ORDER BY points DESC'''
+
+    cur.execute(sql)
+
+    value = cur.fetchall()
+
+    pos = 0
+    position = 0
+
+    for i in value:
+        if i[0] == user:
+            position = pos + 1
+            return position
+        else:
+
+            if pos > 100:
+                return "100+"
+            pos = pos + 1
+
+@bot.command()
+async def gamble(ctx, pointsIn = ''):
+    if pointsIn.isnumeric():
+        points = int(pointsIn)
+    else:
+        await ctx.send("That is not a valid number of points to Gamble!")
+        return
+
+    user, currentpoints, streak = getPointData(ctx.author.id)
+
+    if points > currentpoints:
+        await ctx.send("You do not have that many points to gamble!")
+        return
+
+    luck = random.randint(1, 100)
+
+    if luck > 99:
+        winnings = (points * 5)-points
+        await ctx.send(f":bank: ULTRA JACKPOT\nYOU WON: {winnings+points} Points!")
+        modifyPoints(user, winnings)
+        return
+    if luck > 92:
+        winnings = (points * 3)-points
+        await ctx.send(f":moneybag: MEGA JACKPOT\nYOU WON: {round(winnings+points)} Points!")
+        modifyPoints(user, round(winnings))
+        return
+    if luck > 85:
+        winnings = (points * random.uniform(1.5, 2.5))-points
+        await ctx.send(f":coin: WIN\nYOU WON: {round(winnings+points)} Points!")
+        modifyPoints(user, round(winnings))
+        return
+    if luck > 65:
+        winnings = (points * random.uniform(1.01, 1.5))-points
+        await ctx.send(f":coin: WIN\nYOU WON: {round(winnings+points)} Points!")
+        modifyPoints(user, round(winnings))
+        return
+    if luck < 5:
+        losing = points * 0.1
+        winnings = 0-(points - losing)
+        await ctx.send(f":poop: UNLUCKY\nYOU LOST: {round(winnings)} Points!")
+        modifyPoints(user, round(winnings))
+        return
+    if luck < 2:
+        winnings = 0 - points
+        await ctx.send(f":poop: UNLUCKY\nYou lost all your points!")
+        modifyPoints(user, round(winnings))
+        return
+    else:
+        losing = points * random.uniform(0.2, 0.9)
+        winnings = round(0 - losing)
+        await ctx.send(f":roll_of_paper: LOSS\nYOU LOST: {winnings} Points!")
+        modifyPoints(user, round(winnings))
+        return
+
+currentlyDefending = []
+stealCooldown = []
+
+@bot.command()
+async def steal(ctx):
+
+    global stealCooldown
+
+    if ctx.author.id in stealCooldown:
+        await ctx.send("You can only steal points once every 6 hours!")
+        return
+
+    if not ctx.message.mentions:
+        await ctx.send("You need to say who you're stealing from!")
+        return
+
+    mention = ctx.message.mentions[0]
+    mentionid = mention.id
+
+    if mentionid == ctx.author.id:
+        await ctx.send("You can't steal from yourself!")
+        return
+
+    cur = conn.cursor()
+    sql = '''SELECT * from pointDB WHERE ownerid IS ?'''
+    cur.execute(sql, [mentionid])
+
+    stolenStats = cur.fetchone()
+
+    cur.execute(sql, [ctx.author.id])
+
+    userStats = cur.fetchone()
+
+    if stolenStats is None:
+        await ctx.send("That user does not seem to have any points to steal!")
+        return
+
+    Vpoints = stolenStats[1]
+    Apoints = userStats[1]
+
+    stealEffective = 0.05
+
+    if Vpoints < 300:
+        stealEffective = 0
+    elif Vpoints > 2*Apoints:
+        stealEffective = 0.15
+    elif Apoints > 2*Vpoints:
+        stealEffective = 0
+    elif Vpoints > 1.5*Apoints:
+        stealEffective = 0.1
+    elif Apoints > Vpoints:
+        stealEffective = 0.02
+
+    toSteal = round(Vpoints*stealEffective)
+
+    if toSteal == 0:
+        await ctx.send(f"You were unable to steal any points from {mention}")
+        return
+
+    await ctx.send(f"Attempting to steal {toSteal} from {mention.mention}\n"
+                   f"If {mention} does not defend by doing `o!defend` within 1 hour, the points will be yours!")
+
+    try:
+        await mention.send("Watch Out!\n"
+                           f"{ctx.author.mention} is trying to steal {toSteal} of your points in {ctx.guild}! To prevent them, type `o!defend` in {ctx.guild}")
+    except:
+        pass
+
+    currentlyDefending.append(mentionid)
+    stealCooldown.append(ctx.author.id)
+    await thiefHandler(ctx.author, mention, toSteal)
+    await thiefCooldown(ctx.author)
+
+async def thiefCooldown(author):
+
+    await asyncio.sleep(21600)
+    stealCooldown.remove(author.id)
+
+async def thiefHandler(author, mention, toSteal):
+
+    await asyncio.sleep(3600)
+
+    if mention.id not in currentlyDefending:
+        author.send(f"Unfortunately, {mention} defended themselves in time and prevented you from stealing their points!")
+        return
+
+    modifyPoints(mention.id, (0-toSteal))
+    modifyPoints(author.id, 0.9*toSteal)
+
+    try:
+        await author.send(f"Successfully stole {toSteal} points from {mention}!")
+    except:
+        pass
+
+    try:
+        await mention.send(f"Oh No! {author} stole {toSteal} points from you!")
+    except:
+        pass
+
+def modifyPoints(user, points):
+
+    user, oldPoints, streak = getPointData(user)
+
+    newPoints = points + oldPoints
+
+    sql = '''UPDATE pointDB SET points = ? WHERE ownerid is ?'''
+    cur = conn.cursor()
+    cur.execute(sql, [newPoints, user])
+    conn.commit()
+
+@bot.command()
+async def defend(ctx):
+    if ctx.author.id in currentlyDefending:
+        await ctx.send("Successfully defended your points from the attacker!")
+        for i in currentlyDefending:
+            if i == ctx.author.id:
+                currentlyDefending.remove(i)
+    else:
+        await ctx.send("You are not currently being stolen from!")
+    return
+
 @bot.event
 async def on_ready():
     print("Bot Online!")
+    resStreak.start()
 
 
 bot.run(token)
