@@ -887,7 +887,7 @@ async def steal(ctx):
     global stealCooldown
 
     if ctx.author.id in stealCooldown:
-        await ctx.send("You can only steal points once every 6 hours!")
+        await ctx.send("You can only steal points once every 3 hours!")
         return
 
     if not ctx.message.mentions:
@@ -918,20 +918,23 @@ async def steal(ctx):
     Vpoints = stolenStats[1]
     Apoints = userStats[1]
 
-    stealEffective = 0.05
+    stealEffective = 0.1
 
     if Vpoints < 300:
         stealEffective = 0
     elif Vpoints > 2*Apoints:
-        stealEffective = 0.15
+        stealEffective = 0.20
     elif Apoints > 2*Vpoints:
         stealEffective = 0
     elif Vpoints > 1.5*Apoints:
-        stealEffective = 0.1
+        stealEffective = 0.15
     elif Apoints > Vpoints:
-        stealEffective = 0.02
+        stealEffective = 0.05
 
     toSteal = round(Vpoints*stealEffective)
+
+    if toSteal > 10000:
+        toSteal = 10000
 
     if toSteal == 0:
         await ctx.send(f"You were unable to steal any points from {mention}")
@@ -961,7 +964,7 @@ async def thiefHandler(author, mention, toSteal):
     await asyncio.sleep(3600)
 
     if mention.id not in currentlyDefending:
-        author.send(f"Unfortunately, {mention} defended themselves in time and prevented you from stealing their points!")
+        await author.send(f"Unfortunately, {mention} defended themselves in time and prevented you from stealing their points!")
         return
 
     modifyPoints(mention.id, (0-toSteal))
