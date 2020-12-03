@@ -954,9 +954,12 @@ async def steal(ctx):
     await thiefHandler(ctx.author, mention, toSteal)
     await thiefCooldown(ctx.author)
 
+def remove_values_from_list(the_list, val):
+   return [value for value in the_list if value != val]
+
 async def thiefCooldown(author):
 
-    await asyncio.sleep(21600)
+    await asyncio.sleep(10800)
     stealCooldown.remove(author.id)
 
 async def thiefHandler(author, mention, toSteal):
@@ -993,11 +996,12 @@ def modifyPoints(user, points):
 
 @bot.command()
 async def defend(ctx):
+
+    global currentlyDefending
+
     if ctx.author.id in currentlyDefending:
         await ctx.send("Successfully defended your points from the attacker!")
-        for i in currentlyDefending:
-            if i == ctx.author.id:
-                currentlyDefending.remove(i)
+        currentlyDefending = remove_values_from_list(currentlyDefending, ctx.author.id)
     else:
         await ctx.send("You are not currently being stolen from!")
     return
