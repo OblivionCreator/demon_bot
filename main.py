@@ -1019,7 +1019,7 @@ async def job():
     raffleEntries = []
     raffleOngoing = True
 
-    await asyncio.sleep(15)
+    await asyncio.sleep(21600)
 
 
     listlen = len(raffleEntries)
