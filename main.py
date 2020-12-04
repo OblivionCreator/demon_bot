@@ -6,10 +6,10 @@ from discord.ext import tasks
 from datetime import datetime
 from pathlib import Path
 import random
-
 import discord
 from discord.ext import commands
 import ast
+import schedule
 import time
 import json
 import sqlite3
@@ -933,9 +933,6 @@ async def steal(ctx):
 
     toSteal = round(Vpoints*stealEffective)
 
-    if toSteal > 10000:
-        toSteal = 10000
-
     if toSteal == 0:
         await ctx.send(f"You were unable to steal any points from {mention}")
         return
@@ -971,10 +968,10 @@ async def thiefHandler(author, mention, toSteal):
         return
 
     modifyPoints(mention.id, (0-toSteal))
-    modifyPoints(author.id, 0.9*toSteal)
+    modifyPoints(author.id, round(0.9*toSteal))
 
     try:
-        await author.send(f"Successfully stole {toSteal} points from {mention}!")
+        await author.send(f"Successfully stole {toSteal} points from {mention}!\n{round(toSteal*0.1)} points were lost during the heist!")
     except:
         pass
 
@@ -1006,10 +1003,90 @@ async def defend(ctx):
         await ctx.send("You are not currently being stolen from!")
     return
 
+raffleEntries = []
+raffleOngoing = False
+
+async def job():
+
+    global raffleEntries
+    global raffleOngoing
+
+    channel = bot.get_channel(771933913630375960)
+    await channel.send("The Daily Raffle is starting! The raffle will end in 6 hours.\n"
+                 "Each Raffle entry costs 1000 Points.\n"
+                 "To enter, do o!raffle <Number of Entries>")
+
+    raffleEntries = []
+    raffleOngoing = True
+
+    await asyncio.sleep(15)
+
+
+    listlen = len(raffleEntries)
+
+    if listlen == 0:
+        await channel.send("There were no entries in the raffle!")
+        return
+
+    winner = random.randint(0, listlen-1)
+    winnerID = raffleEntries[winner]
+
+    await channel.send(f"Congratulations to <@{winnerID}> on winning the daily raffle!\nThey have won {listlen*1000} points!")
+    modifyPoints(winnerID, (listlen*1000))
+
+    raffleOngoing = False
+    raffleEntries = []
+
+@bot.command()
+async def raffle(ctx, entries=''):
+
+    '''o!raffle <entries> - Each entry costs 1000 points. You can enter multiple times for a higher chance of winning!'''
+
+    global raffleEntries
+    global raffleOngoing
+
+    if not raffleOngoing:
+        await ctx.send("There is not an ongoing raffle!")
+        return
+
+    if not entries.isnumeric():
+        await ctx.send("You need to define how many entries you want to buy!")
+        return
+
+    pointData = getPointData(ctx.author.id)
+
+    id, points, streak = pointData
+
+    entryNo = int(entries)
+
+    if (entryNo*1000) > points:
+        await ctx.send("You do not have enough points to buy that many entries!\nRemember, each entry costs 1000 Points!")
+        return
+
+    for i in range(entryNo):
+        raffleEntries.append(ctx.author.id)
+
+    modifyPoints(ctx.author.id, 0-(entryNo*1000))
+
+    await ctx.send(f"You have successfully bought {entryNo} entries to the raffle!")
+
+
+@bot.command()
+async def forceRaffle(ctx):
+    if ctx.author.id == 110399543039774720:
+        await job()
+
+
+@tasks.loop(minutes=1)
+async def startRaffle():
+    schedule.run_pending()
+
 @bot.event
 async def on_ready():
     print("Bot Online!")
+    schedule.every().day.at("00:00").do(job)
     resStreak.start()
+    startRaffle.start()
 
 
 bot.run(token)
