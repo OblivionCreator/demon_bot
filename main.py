@@ -1011,7 +1011,7 @@ async def job():
     global raffleEntries
     global raffleOngoing
 
-    channel = bot.get_channel(771933913630375960)
+    channel = bot.get_channel(765310903871733783)
     await channel.send("The Daily Raffle is starting! The raffle will end in 6 hours.\n"
                  "Each Raffle entry costs 1000 Points.\n"
                  "To enter, do o!raffle <Number of Entries>")
@@ -1077,14 +1077,16 @@ async def forceRaffle(ctx):
         await job()
 
 
-@tasks.loop(minutes=1)
+@tasks.loop(seconds=60)
 async def startRaffle():
-    schedule.run_pending()
+    t = datetime.now()
+    c_t = t.strftime("%H:%M")
+    if c_t == "00:00":
+        await job()
 
 @bot.event
 async def on_ready():
     print("Bot Online!")
-    schedule.every().day.at("00:00").do(job)
     resStreak.start()
     startRaffle.start()
 
