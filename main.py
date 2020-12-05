@@ -956,7 +956,7 @@ def remove_values_from_list(the_list, val):
 
 async def thiefCooldown(author):
 
-    await asyncio.sleep(10800)
+    time.sleep(10800)
     stealCooldown.remove(author.id)
 
 async def thiefHandler(author, mention, toSteal):
