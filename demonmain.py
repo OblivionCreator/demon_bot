@@ -797,7 +797,7 @@ async def points(ctx):
 
     oID, points, streak = getPointData(user)
 
-    embedP = discord.Embed(name=f"Showing points for <@{user}>", description=f'{points} Points (Position: {position})',
+    embedP = discord.Embed(name=f"Showing points for <@{user}>", description=f'{round(points)} Points (Position: {position})',
                            colour=0xFFFA00)
     await ctx.send(f"Showing points for {ctx.guild.get_member(user) or user}", embed=embedP)
 
@@ -915,6 +915,10 @@ async def steal(ctx):
         await ctx.send("That user does not seem to have any points to steal!")
         return
 
+    if mentionid in currentlyDefending:
+        await ctx.send(f"{mention} is already being stolen from!")
+        return
+
     Vpoints = stolenStats[1]
     Apoints = userStats[1]
 
@@ -956,7 +960,7 @@ def remove_values_from_list(the_list, val):
 
 async def thiefCooldown(author):
 
-    asyncio.sleep(10800)
+    asyncio.sleep(7200)
     stealCooldown.remove(author.id)
 
 async def thiefHandler(author, mention, toSteal):
@@ -967,8 +971,15 @@ async def thiefHandler(author, mention, toSteal):
         await author.send(f"Unfortunately, {mention} defended themselves in time and prevented you from stealing their points!")
         return
 
+    oid, points, streak = getPointData()
+
+    if points < toSteal:
+        toSteal = points
+
     modifyPoints(mention.id, (0-toSteal))
     modifyPoints(author.id, round(0.9*toSteal))
+
+
 
     try:
         await author.send(f"Successfully stole {toSteal} points from {mention}!\n{round(toSteal*0.1)} points were lost during the heist!")
@@ -1072,10 +1083,45 @@ async def raffle(ctx, entries=''):
 
 
 @bot.command()
+async def send(ctx, mention, points):
+
+    uID = None
+
+    if ctx.message.mentions:
+        uID = ctx.message.mentions[0].id
+    else:
+        uID = bot.get_user(int(mention))
+
+    if uID == None:
+        await ctx.send("That is not a valid user to send points to!")
+        return
+
+    if not points.isnumeric():
+        await ctx.send("That is not a valid amount of points to send!")
+        return
+
+    points = int(points)
+
+    senderID, senderPo, senderSt = getPointData(ctx.author.id)
+    recID, recPo, recSt = getPointData(uID)
+
+    if recID == None:
+        await ctx.send("I do not recognise that user! If they are new, they will need to send a message before they can receive any points!")
+        return
+
+    if points > senderPo:
+        await ctx.send("You do not have that many points to send!")
+        return
+
+    modifyPoints(ctx.author.id, (0-points))
+    modifyPoints(uID, points)
+
+    await ctx.send(f"Successfully sent {points} Points to {bot.get_user(uID).mention}!")
+
+@bot.command()
 async def forceRaffle(ctx):
     if ctx.author.id == 110399543039774720:
         await job()
-
 
 @tasks.loop(seconds=60)
 async def startRaffle():
@@ -1089,6 +1135,5 @@ async def on_ready():
     print("Bot Online!")
     resStreak.start()
     startRaffle.start()
-
 
 bot.run(token)
