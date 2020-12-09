@@ -838,7 +838,7 @@ async def gamble(ctx, pointsIn = ''):
         await ctx.send("You do not have that many points to gamble!")
         return
 
-    luck = random.randint(1, 100)
+    luck = random.randint(0, 100)
 
     if luck > 99:
         winnings = (points * 5)-points
@@ -1117,6 +1117,28 @@ async def send(ctx, mention, points):
     modifyPoints(uID, points)
 
     await ctx.send(f"Successfully sent {points} Points to {bot.get_user(uID).mention}!")
+
+@bot.command()
+@commands.is_owner()
+async def addpoints(ctx, points):
+    if points.isnumeric():
+        points = int(points)
+        modifyPoints(ctx.author.id, points)
+        await ctx.send(f"You gave yourself {points} Points!")
+        return
+    await ctx.send("Not a valid number of points to add!")
+
+
+@bot.command()
+@commands.is_owner()
+async def removepoints(ctx, points):
+    if points.isnumeric():
+        points = int(points)
+        modifyPoints(ctx.author.id, 0-points)
+        await ctx.send(f"You removed {points} Points from yourself!")
+        return
+    await ctx.send("Not a valid number of points to remove!")
+
 
 @bot.command()
 async def forceRaffle(ctx):
