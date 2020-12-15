@@ -1118,6 +1118,37 @@ async def send(ctx, mention, points):
 
     await ctx.send(f"Successfully sent {points} Points to {bot.get_user(uID).mention}!")
 
+roles = []
+
+@bot.command()
+async def shopSetup(ctx):
+
+    global roles
+
+    with open("rolenames.txt", encoding="utf-8") as f:
+        roles = f.read().splitlines()
+
+    print(roles)
+
+    select1 = random.randint(1, (len(roles)))
+
+@bot.command()
+async def shop(ctx):
+
+    shopE = discord.Embed(name='', description='', colour='0x450083')
+
+
+@bot.command()
+@commands.is_owner()
+async def createroles(ctx):
+    guild = ctx.guild
+
+    with open("rolenames.txt", encoding="utf-8") as f:
+        roles = f.read().splitlines()
+
+    for i in roles:
+        await guild.create_role(name=i)
+
 @bot.command()
 @commands.is_owner()
 async def addpoints(ctx, points):
