@@ -884,6 +884,9 @@ stealCooldown = []
 @bot.command()
 async def steal(ctx):
 
+    global currentlyDefending
+    global stealCooldown
+
     if ctx.author.id in stealCooldown:
         await ctx.send("You can only steal points once every 3 hours!")
         return
