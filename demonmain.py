@@ -711,6 +711,10 @@ async def on_message(message):
     if message.author.bot:
         return
 
+    game = random.randint(1, 100)
+    if game <= 2 and message.content[:2] == 'o!':
+        await message.channel.send(f"You just lost the game, <@{message.author.id}>")
+
     author = message.author.id
 
     cur = conn.cursor()
