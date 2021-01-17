@@ -58,11 +58,11 @@ async def _warn(ctx, user='', *args):
     ''' Warns the specified user for the reason provided.'''
 
     if not ctx.message.author.guild_permissions.manage_messages:
-        await ctx.send("You do not have permission to perform this action!")
+        await ctx.reply("You do not have permission to perform this action!")
         return
 
     if user == '':
-        await ctx.send("You need to define who you want to warn!")
+        await ctx.reply("You need to define who you want to warn!")
         return
 
     try:
@@ -76,7 +76,7 @@ async def _warn(ctx, user='', *args):
     tup = args
     warnReason = ' '.join(tup)
 
-    await ctx.send(f"Successfully warned {getMember(ctx, user)} for {warnReason}.")
+    await ctx.reply(f"Successfully warned {getMember(ctx, user)} for {warnReason}.")
 
     warnFile = f"warns/{user}_{int(time.time())}.json"
 
@@ -100,7 +100,7 @@ async def _warnCheck(ctx, user):
     await ctx.message.delete()
 
     if not ctx.message.author.guild_permissions.manage_messages:
-        await ctx.send("You do not have permission to perform this action!")
+        await ctx.reply("You do not have permission to perform this action!")
         return
 
     try:
@@ -109,7 +109,7 @@ async def _warnCheck(ctx, user):
     except:
         if checkMember(ctx, user) is None:
             validUser = False
-            await ctx.send("This user has left the server, or the user ID is invalid!")
+            await ctx.reply("This user has left the server, or the user ID is invalid!")
         else:
             validUser = True
         userID = user
@@ -144,7 +144,7 @@ async def _warnCheck(ctx, user):
         print(reasonString)
         embedVar.add_field(name=f"Warning {reasonCount}:", value=reasonString[0:1023], inline=False)
 
-    await ctx.send(embed=embedVar)
+    await ctx.reply(embed=embedVar)
 
 
 ## EVAL COMMAND. ##
@@ -203,11 +203,11 @@ async def _kick(ctx, user='', *args):
     await ctx.message.delete()
 
     if not ctx.message.author.guild_permissions.kick_members:
-        await ctx.send("You do not have permission to perform this action!")
+        await ctx.reply("You do not have permission to perform this action!")
         return
 
     if user == '':
-        await ctx.send("You need to select a user to kick!")
+        await ctx.reply("You need to select a user to kick!")
         return
 
     try:
@@ -217,7 +217,7 @@ async def _kick(ctx, user='', *args):
     try:
         user = await bot.fetch_user(user)
     except:
-        await ctx.send("That is not a valid Discord user!")
+        await ctx.reply("That is not a valid Discord user!")
         return
 
     reason = ''
@@ -234,7 +234,7 @@ async def _kick(ctx, user='', *args):
     await cmdLogger(member=user, reason=reason, func='Kick', activator=ctx.author)
 
     await ctx.guild.kick(user=user, reason=reason)
-    await ctx.send(f"User {user} has been kicked.")
+    await ctx.reply(f"User {user} has been kicked.")
 
 
 @bot.command(name='ban', aliases=['banish'])
@@ -244,11 +244,11 @@ async def _ban(ctx, user='', *args):
     await ctx.message.delete()
 
     if not ctx.message.author.guild_permissions.ban_members:
-        await ctx.send("You do not have permission to perform this action!")
+        await ctx.reply("You do not have permission to perform this action!")
         return
 
     if user == '':
-        await ctx.send("You need to select a user to ban!")
+        await ctx.reply("You need to select a user to ban!")
         return
 
     try:
@@ -269,12 +269,12 @@ async def _ban(ctx, user='', *args):
     try:
         member = await bot.fetch_user(user)
     except:
-        await ctx.send("That is not a valid Discord user!")
+        await ctx.reply("That is not a valid Discord user!")
         return
 
     await ctx.guild.ban(user=member, reason=banReason)
     await cmdLogger(member=member, reason=banReason, func='Ban', activator=ctx.author)
-    await ctx.send(f"User {member} has been banned for {banReason}.")
+    await ctx.reply(f"User {member} has been banned for {banReason}.")
 
     guild = ctx.guild
     purgeMsg = 0
@@ -282,7 +282,7 @@ async def _ban(ctx, user='', *args):
     for c in guild.channels:
         purgeMsg = purgeMsg + len(await c.purge(limit=75, check=lambda x: (x.author.id == member.id)))
 
-    await ctx.send(f"Purged {purgeMsg} messages belonging to {member}.")
+    await ctx.reply(f"Purged {purgeMsg} messages belonging to {member}.")
 
 
 @bot.command(name='mute', aliases=['gag', 'silence', 'shutup'])
@@ -291,7 +291,7 @@ async def _mute(ctx, user, *args):
     await ctx.message.delete()
 
     if not ctx.message.author.guild_permissions.manage_messages:
-        await ctx.send("You do not have permission to perform this action!")
+        await ctx.reply("You do not have permission to perform this action!")
         return
 
     validUser = False
@@ -305,13 +305,13 @@ async def _mute(ctx, user, *args):
     try:
         await bot.fetch_user(user)
     except:
-        await ctx.send("That is not a valid user!")
+        await ctx.reply("That is not a valid user!")
         return
 
     if not validUser:
 
         if not checkMember(ctx, user):
-            ctx.send("This user has left the server!")
+            ctx.reply("This user has left the server!")
             return
         else:
             validUser = True
@@ -343,7 +343,7 @@ async def _mute(ctx, user, *args):
 
     print(roleList)
 
-    await ctx.send(f"User {member} has been muted!")
+    await ctx.reply(f"User {member} has been muted!")
 
 
 @bot.command(name='unmute', aliases=['free'])
@@ -351,7 +351,7 @@ async def unmute(ctx, user):
     '''Unmutes a muted user.'''
 
     if not ctx.message.author.guild_permissions.manage_messages:
-        await ctx.send("You do not have permission to perform this action!")
+        await ctx.reply("You do not have permission to perform this action!")
         return
 
     await ctx.message.delete()
@@ -367,13 +367,13 @@ async def unmute(ctx, user):
     try:
         await bot.fetch_user(user)
     except:
-        await ctx.send("That is not a valid user!")
+        await ctx.reply("That is not a valid user!")
         return
 
     if not validUser:
 
         if not checkMember(ctx, user):
-            ctx.send("This user has left the server!")
+            ctx.reply("This user has left the server!")
             return
         else:
             validUser = True
@@ -384,7 +384,7 @@ async def unmute(ctx, user):
     try:
         file, = glob.glob(f"mutes/{user}_*")
     except:
-        await ctx.send(f"{member} is not muted!")
+        await ctx.reply(f"{member} is not muted!")
         return
 
     print(file)
@@ -405,7 +405,7 @@ async def unmute(ctx, user):
 
     f.close()
 
-    await ctx.send(f"{member} has been unmuted.")
+    await ctx.reply(f"{member} has been unmuted.")
 
     for file in glob.glob(f"mutes/{member.id}_*"):
         os.remove(file)
@@ -420,7 +420,7 @@ async def _stripRoles(ctx, user=0):
     await ctx.message.delete()
 
     if not ctx.message.author.guild_permissions.manage_messages:
-        await ctx.send("You do not have permission to perform this action!")
+        await ctx.reply("You do not have permission to perform this action!")
         return
 
     validUser = False
@@ -434,13 +434,13 @@ async def _stripRoles(ctx, user=0):
     try:
         await bot.fetch_user(user)
     except:
-        await ctx.send("That is not a valid user!")
+        await ctx.reply("That is not a valid user!")
         return
 
     if not validUser:
 
         if not checkMember(ctx, user):
-            ctx.send("This user has left the server!")
+            ctx.reply("This user has left the server!")
             return
         else:
             validUser = True
@@ -470,7 +470,7 @@ async def _stripRoles(ctx, user=0):
     f.close()
     print("Rolebanned Member!")
     print(roleList)
-    await ctx.send(f"User {member} has been rolebanned!")
+    await ctx.reply(f"User {member} has been rolebanned!")
 
 
 @bot.command(name='unroleban', aliases=['untoss', 'excuse'])
@@ -478,7 +478,7 @@ async def _unStrip(ctx, user):
     '''Unrolebans specified user..'''
 
     if not ctx.message.author.guild_permissions.manage_messages:
-        await ctx.send("You do not have permission to perform this action!")
+        await ctx.reply("You do not have permission to perform this action!")
         return
 
     await ctx.message.delete()
@@ -494,13 +494,13 @@ async def _unStrip(ctx, user):
     try:
         await bot.fetch_user(user)
     except:
-        await ctx.send("That is not a valid user!")
+        await ctx.reply("That is not a valid user!")
         return
 
     if not validUser:
 
         if not checkMember(ctx, user):
-            ctx.send("This user has left the server!")
+            ctx.reply("This user has left the server!")
             return
         else:
             validUser = True
@@ -511,7 +511,7 @@ async def _unStrip(ctx, user):
     try:
         file, = glob.glob(f"rolebans/{user}_*")
     except:
-        await ctx.send(f"{member} is not rolebanned!")
+        await ctx.reply(f"{member} is not rolebanned!")
         return
 
     print(file)
@@ -532,7 +532,7 @@ async def _unStrip(ctx, user):
 
     f.close()
 
-    await ctx.send(f"{member} has been unrolebanned.")
+    await ctx.reply(f"{member} has been unrolebanned.")
 
     for file in glob.glob(f"rolebans/{member.id}_*"):
         os.remove(file)
@@ -556,11 +556,11 @@ async def _clearwarns(ctx, user):
         waRe = waRe + 1
 
     if waRe == 0:
-        await ctx.send("There was no warnings to remove!")
+        await ctx.reply("There was no warnings to remove!")
     else:
         plural = 's'
         if (waRe == 1): plural = ''
-        await ctx.send(f"Successfully removed {waRe} warning{plural}!")
+        await ctx.reply(f"Successfully removed {waRe} warning{plural}!")
 
 
 @bot.command(name='announce', aliases=['a'])
@@ -577,7 +577,7 @@ async def _announce(ctx, channel: discord.TextChannel, title, content):
     await ctx.message.delete()
 
     if not ctx.message.author.guild_permissions.manage_messages:
-        await ctx.send("You do not have permission to perform this action!")
+        await ctx.reply("You do not have permission to perform this action!")
         return
 
     print(channel, title, content)
@@ -591,7 +591,7 @@ async def _announce(ctx, channel: discord.TextChannel, title, content):
 
 @_announce.error
 async def _announce_error(ctx, args):
-    await ctx.send(
+    await ctx.reply(
         "Unable to send announcement! Please check your formatting is correct. For more help, please do o!help announce")
 
 
@@ -776,7 +776,7 @@ async def leaderboard(ctx):
         notuser = f'{temp[0]} (User has left server)'
         embed.add_field(name=f"Position {n + 1}: {user or temp[0]}", value=f"{temp[1]} Points", inline=False)
 
-    await ctx.send("Here are the current rankings.", embed=embed)
+    await ctx.reply("Here are the current rankings.", embed=embed)
 
 def getPointData(user):
 
@@ -803,7 +803,7 @@ async def points(ctx):
 
     embedP = discord.Embed(name=f"Showing points for <@{user}>", description=f'{round(points)} Points (Position: {position})',
                            colour=0xFFFA00)
-    await ctx.send(f"Showing points for {ctx.guild.get_member(user) or user}", embed=embedP)
+    await ctx.reply(f"Showing points for {ctx.guild.get_member(user) or user}", embed=embedP)
 
 
 def getPos(user):
@@ -833,52 +833,52 @@ async def gamble(ctx, pointsIn = ''):
     if pointsIn.isnumeric():
         points = int(pointsIn)
     else:
-        await ctx.send("That is not a valid number of points to Gamble!")
+        await ctx.reply("That is not a valid number of points to Gamble!")
         return
 
     user, currentpoints, streak = getPointData(ctx.author.id)
 
     if points > currentpoints:
-        await ctx.send("You do not have that many points to gamble!")
+        await ctx.reply("You do not have that many points to gamble!")
         return
 
     luck = random.randint(0, 100)
 
     if luck > 99:
         winnings = (points * 5)-points
-        await ctx.send(f":bank: ULTRA JACKPOT\nYOU WON: {winnings+points} Points!")
+        await ctx.reply(f":bank: ULTRA JACKPOT\nYOU WON: {winnings+points} Points!")
         modifyPoints(user, winnings)
         return
     if luck > 92:
         winnings = (points * 3)-points
-        await ctx.send(f":moneybag: MEGA JACKPOT\nYOU WON: {round(winnings+points)} Points!")
+        await ctx.reply(f":moneybag: MEGA JACKPOT\nYOU WON: {round(winnings+points)} Points!")
         modifyPoints(user, round(winnings))
         return
     if luck > 85:
         winnings = (points * random.uniform(1.5, 2.5))-points
-        await ctx.send(f":coin: WIN\nYOU WON: {round(winnings+points)} Points!")
+        await ctx.reply(f":coin: WIN\nYOU WON: {round(winnings+points)} Points!")
         modifyPoints(user, round(winnings))
         return
     if luck > 65:
         winnings = (points * random.uniform(1.01, 1.5))-points
-        await ctx.send(f":coin: WIN\nYOU WON: {round(winnings+points)} Points!")
+        await ctx.reply(f":coin: WIN\nYOU WON: {round(winnings+points)} Points!")
         modifyPoints(user, round(winnings))
         return
     if luck < 5:
         losing = points * 0.1
         winnings = 0-(points - losing)
-        await ctx.send(f":poop: UNLUCKY\nYOU LOST: {round(winnings)} Points!")
+        await ctx.reply(f":poop: UNLUCKY\nYOU LOST: {round(winnings)} Points!")
         modifyPoints(user, round(winnings))
         return
     if luck < 2:
         winnings = 0 - points
-        await ctx.send(f":poop: UNLUCKY\nYou lost all your points!")
+        await ctx.reply(f":poop: UNLUCKY\nYou lost all your points!")
         modifyPoints(user, round(winnings))
         return
     else:
         losing = points * random.uniform(0.2, 0.9)
         winnings = round(0 - losing)
-        await ctx.send(f":roll_of_paper: LOSS\nYOU LOST: {winnings} Points!")
+        await ctx.reply(f":roll_of_paper: LOSS\nYOU LOST: {winnings} Points!")
         modifyPoints(user, round(winnings))
         return
 
@@ -892,18 +892,18 @@ async def steal(ctx):
     global stealCooldown
 
     if ctx.author.id in stealCooldown:
-        await ctx.send("You can only steal points once every 3 hours!")
+        await ctx.reply("You can only steal points once every 3 hours!")
         return
 
     if not ctx.message.mentions:
-        await ctx.send("You need to say who you're stealing from!")
+        await ctx.reply("You need to say who you're stealing from!")
         return
 
     mention = ctx.message.mentions[0]
     mentionid = mention.id
 
     if mentionid == ctx.author.id:
-        await ctx.send("You can't steal from yourself!")
+        await ctx.reply("You can't steal from yourself!")
         return
 
     cur = conn.cursor()
@@ -917,11 +917,11 @@ async def steal(ctx):
     userStats = cur.fetchone()
 
     if stolenStats is None:
-        await ctx.send("That user does not seem to have any points to steal!")
+        await ctx.reply("That user does not seem to have any points to steal!")
         return
 
     if mentionid in currentlyDefending:
-        await ctx.send(f"{mention} is already being stolen from!")
+        await ctx.reply(f"{mention} is already being stolen from!")
         return
 
     Vpoints = stolenStats[1]
@@ -943,10 +943,10 @@ async def steal(ctx):
     toSteal = round(Vpoints*stealEffective)
 
     if toSteal == 0:
-        await ctx.send(f"You were unable to steal any points from {mention}")
+        await ctx.reply(f"You were unable to steal any points from {mention}")
         return
 
-    await ctx.send(f"Attempting to steal {toSteal} from {mention.mention}\n"
+    await ctx.reply(f"Attempting to steal {toSteal} from {mention.mention}\n"
                    f"If {mention} does not defend by doing `o!defend` within 1 hour, the points will be yours!")
 
     try:
@@ -1013,10 +1013,10 @@ async def defend(ctx):
     global currentlyDefending
 
     if ctx.author.id in currentlyDefending:
-        await ctx.send("Successfully defended your points from the attacker!")
+        await ctx.reply("Successfully defended your points from the attacker!")
         currentlyDefending = remove_values_from_list(currentlyDefending, ctx.author.id)
     else:
-        await ctx.send("You are not currently being stolen from!")
+        await ctx.reply("You are not currently being stolen from!")
     return
 
 raffleEntries = []
@@ -1062,11 +1062,11 @@ async def raffle(ctx, entries=''):
     global raffleOngoing
 
     if not raffleOngoing:
-        await ctx.send("There is not an ongoing raffle!")
+        await ctx.reply("There is not an ongoing raffle!")
         return
 
     if not entries.isnumeric():
-        await ctx.send("You need to define how many entries you want to buy!")
+        await ctx.reply("You need to define how many entries you want to buy!")
         return
 
     pointData = getPointData(ctx.author.id)
@@ -1076,7 +1076,7 @@ async def raffle(ctx, entries=''):
     entryNo = int(entries)
 
     if (entryNo*1000) > points:
-        await ctx.send("You do not have enough points to buy that many entries!\nRemember, each entry costs 1000 Points!")
+        await ctx.reply("You do not have enough points to buy that many entries!\nRemember, each entry costs 1000 Points!")
         return
 
     for i in range(entryNo):
@@ -1084,7 +1084,7 @@ async def raffle(ctx, entries=''):
 
     modifyPoints(ctx.author.id, 0-(entryNo*1000))
 
-    await ctx.send(f"You have successfully bought {entryNo} entries to the raffle!")
+    await ctx.reply(f"You have successfully bought {entryNo} entries to the raffle!")
 
 
 @bot.command()
@@ -1098,11 +1098,11 @@ async def send(ctx, mention, points):
         uID = bot.get_user(int(mention))
 
     if uID == None:
-        await ctx.send("That is not a valid user to send points to!")
+        await ctx.reply("That is not a valid user to send points to!")
         return
 
     if not points.isnumeric():
-        await ctx.send("That is not a valid amount of points to send!")
+        await ctx.reply("That is not a valid amount of points to send!")
         return
 
     points = int(points)
@@ -1111,17 +1111,17 @@ async def send(ctx, mention, points):
     recID, recPo, recSt = getPointData(uID)
 
     if recID == None:
-        await ctx.send("I do not recognise that user! If they are new, they will need to send a message before they can receive any points!")
+        await ctx.reply("I do not recognise that user! If they are new, they will need to send a message before they can receive any points!")
         return
 
     if points > senderPo:
-        await ctx.send("You do not have that many points to send!")
+        await ctx.reply("You do not have that many points to send!")
         return
 
     modifyPoints(ctx.author.id, (0-points))
     modifyPoints(uID, points)
 
-    await ctx.send(f"Successfully sent {points} Points to {bot.get_user(uID).mention}!")
+    await ctx.reply(f"Successfully sent {points} Points to {bot.get_user(uID).mention}!")
 
 roles = []
 
@@ -1160,9 +1160,9 @@ async def addpoints(ctx, points):
     if points.isnumeric():
         points = int(points)
         modifyPoints(ctx.author.id, points)
-        await ctx.send(f"You gave yourself {points} Points!")
+        await ctx.reply(f"You gave yourself {points} Points!")
         return
-    await ctx.send("Not a valid number of points to add!")
+    await ctx.reply("Not a valid number of points to add!")
 
 
 @bot.command()
@@ -1171,9 +1171,9 @@ async def removepoints(ctx, points):
     if points.isnumeric():
         points = int(points)
         modifyPoints(ctx.author.id, 0-points)
-        await ctx.send(f"You removed {points} Points from yourself!")
+        await ctx.reply(f"You removed {points} Points from yourself!")
         return
-    await ctx.send("Not a valid number of points to remove!")
+    await ctx.reply("Not a valid number of points to remove!")
 
 
 @bot.command()
