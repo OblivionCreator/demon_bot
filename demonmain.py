@@ -1027,9 +1027,9 @@ async def job():
     global raffleEntries
     global raffleOngoing
 
-    channel = bot.get_channel(765310903871733783)
+    channel = bot.get_channel(770428394918641697)
     await channel.send("The Daily Raffle is starting! The raffle will end in 6 hours.\n"
-                 "Each Raffle entry costs 1000 Points.\n"
+                 "Each Raffle entry costs 1000 Points. You may buy up to 100 entries to any given raffle.\n"
                  "To enter, do o!raffle <Number of Entries>")
 
     raffleEntries = []
@@ -1061,6 +1061,12 @@ async def raffle(ctx, entries=''):
     global raffleEntries
     global raffleOngoing
 
+    for i in raffleEntries:
+        if i == ctx.author.id:
+            await ctx.reply("You are already entered in the raffle!")
+            return
+
+
     if not raffleOngoing:
         await ctx.reply("There is not an ongoing raffle!")
         return
@@ -1074,6 +1080,9 @@ async def raffle(ctx, entries=''):
     id, points, streak = pointData
 
     entryNo = int(entries)
+
+    if entryNo > 100:
+        entryNo = 100
 
     if (entryNo*1000) > points:
         await ctx.reply("You do not have enough points to buy that many entries!\nRemember, each entry costs 1000 Points!")
