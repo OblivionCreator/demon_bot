@@ -1055,7 +1055,7 @@ async def job():
 @bot.command()
 async def raffle(ctx, entries=''):
 
-    '''o!raffle <entries> - Each entry costs 1000 points. You can enter multiple times for a higher chance of winning!'''
+    '''o!raffle <entries> - Each entry costs 1000 points. You can purchase up to 100 entries, and can only enter once!'''
 
     global raffleEntries
     global raffleOngoing
