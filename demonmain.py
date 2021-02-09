@@ -1037,7 +1037,6 @@ async def job():
 
     await asyncio.sleep(21600)
 
-
     listlen = len(raffleEntries)
 
     if listlen == 0:
@@ -1098,8 +1097,6 @@ async def raffle(ctx, entries=''):
 
 @bot.command()
 async def send(ctx, mention, points):
-
-    uID = None
 
     if ctx.message.mentions:
         uID = ctx.message.mentions[0].id
