@@ -1027,7 +1027,7 @@ async def job():
     global raffleEntries
     global raffleOngoing
 
-    channel = bot.get_channel(770428394918641697)
+    channel = bot.get_channel(765310903871733783)
     await channel.send("The Daily Raffle is starting! The raffle will end in 6 hours.\n"
                  "Each Raffle entry costs 1000 Points. You may buy up to 100 entries to any given raffle.\n"
                  "To enter, do o!raffle <Number of Entries>")
