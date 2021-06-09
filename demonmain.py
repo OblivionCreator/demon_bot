@@ -9,7 +9,6 @@ import random
 import discord
 from discord.ext import commands
 import ast
-import schedule
 import time
 import json
 import sqlite3
@@ -604,13 +603,20 @@ async def sendLog(embed, data):
 
 @bot.event
 async def on_member_join(member):  # On Member Join - Shows how old their account is and warns if new account.
+
+    banwords = ['h0nde', 'twitter.com/h0nde']
+
+    if any(banword in member.name.lower() for banword in banwords):
+        await member.guild.ban(member, reason='Autoban by Demon Bot. - Known Spambot/Raidbot/Scraper')
+
+
     data = f":inbox_tray: `{(datetime.now()).strftime('%Y-%m-%d %H:%M:%S')}` `[Member Join]`: {member} ({member.id}) {member.mention}"
 
     newM = ''
 
     print(member.created_at.day)
 
-    if member.created_at.day < 7:
+    if member.created_at.day > 7:
         newM = " :warning: New Account! "
 
     embedV = discord.Embed(title=f"{member.guild.member_count} Members",
