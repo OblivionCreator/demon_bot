@@ -2,12 +2,12 @@ import asyncio
 import glob
 import os
 import threading
-from discord.ext import tasks
+from disnake.ext import tasks
 from datetime import datetime
 from pathlib import Path
 import random
-import discord
-from discord.ext import commands
+import disnake as discord
+from disnake.ext import commands
 import ast
 import time
 import json
@@ -18,8 +18,9 @@ token = file.read()
 
 intents = discord.Intents.default()
 intents.members = True
+intents.messages = True
 
-print("DemonBot v1.02 Online!")
+print("DemonBot v1.03 Online!")
 
 bot = commands.Bot(
     command_prefix=['o!', 'demon!'],
@@ -1049,7 +1050,14 @@ async def job():
         await channel.send("There were no entries in the raffle!")
         return
 
-    winner = random.randint(0, listlen-1)
+    validWinner = False
+    iterations = 0
+
+    while not validWinner:
+        winner = random.randint(0, listlen-1)
+        if winner != 312717190128467969 or iterations > 100:
+            validWinner = True
+        iterations += 1
     winnerID = raffleEntries[winner]
 
     await channel.send(f"Congratulations to <@{winnerID}> on winning the daily raffle!\nThey have won {listlen*1000} points!")
