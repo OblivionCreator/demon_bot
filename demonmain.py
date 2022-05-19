@@ -18,7 +18,7 @@ token = file.read()
 
 intents = discord.Intents.default()
 intents.members = True
-intents.messages = True
+intents.message_content = True
 
 print("DemonBot v1.03 Online!")
 
