@@ -778,10 +778,12 @@ async def leaderboard(ctx):
     embed = discord.Embed(title="Showing Points Leaderboard", description="Top 10 Earners", color=0x007DFF)
 
     n=0
+    total = 0
     attempts = 0
-    while n < 10:
+    while total < 10:
         if attempts > 20:
             break
+        n += 1
         attempts +=1
         print(n)
         temp = rawvalue[n]
@@ -789,10 +791,10 @@ async def leaderboard(ctx):
         if user is None:
             print("none")
         else:
+            total += 1
             attempts = 0
             notuser = f'{temp[0]} (User has left server)'
-            embed.add_field(name=f"Position {n + 1}: {user or temp[0]}", value=f"{temp[1]} Points", inline=False)
-            n += 1
+            embed.add_field(name=f"Position {total}: {user or temp[0]}", value=f"{temp[1]} Points", inline=False)
     await ctx.reply("Here are the current rankings.", embed=embed)
 
 def getPointData(user):
