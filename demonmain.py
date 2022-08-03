@@ -786,15 +786,14 @@ async def leaderboard(ctx):
         n += 1
         attempts +=1
         print(n)
-        temp = rawvalue[n]
+        temp = rawvalue[n-1]
         user = ctx.guild.get_member(temp[0])
         if user is None:
             print("none")
         else:
             total += 1
             attempts = 0
-            notuser = f'{temp[0]} (User has left server)'
-            embed.add_field(name=f"Position {total}: {user or temp[0]}", value=f"{temp[1]} Points", inline=False)
+            embed.add_field(name=f"Position {total}: {user}", value=f"{temp[1]} Points", inline=False)
     await ctx.reply("Here are the current rankings.", embed=embed)
 
 def getPointData(user):
@@ -835,12 +834,11 @@ def getPos(user):
     value = cur.fetchall()
 
     pos = 0
-    position = 0
 
     for i in value:
-        if i[0] == user:
-            position = pos + 1
-            return position
+        pos += 1
+        if i[0] == user.id:
+            return pos
 
 @bot.command()
 async def gamble(ctx, pointsIn = ''):
