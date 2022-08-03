@@ -808,7 +808,7 @@ async def points(ctx):
 
     oID, points, streak = getPointData(user)
 
-    embedP = discord.Embed(name=f"Showing points for <@{user}>", description=f'{round(points)} Points (Position: {position})',
+    embedP = discord.Embed(title=f"Showing points for <@{user}>", description=f'{round(points)} Points (Position: {position})',
                            colour=0xFFFA00)
     await ctx.reply(f"Showing points for {ctx.guild.get_member(user) or user}", embed=embedP)
 
