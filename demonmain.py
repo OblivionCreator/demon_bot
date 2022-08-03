@@ -800,15 +800,15 @@ def getPointData(user):
 async def points(ctx):
 
     if ctx.message.mentions:
-        user = ctx.message.mentions[0].id
+        user = ctx.message.mentions[0]
     else:
-        user = ctx.author.id
+        user = ctx.author
 
     position = getPos(user)
 
-    oID, points, streak = getPointData(user)
+    oID, points, streak = getPointData(user.id)
 
-    embedP = discord.Embed(title=f"Showing points for <@{user}>", description=f'{round(points)} Points (Position: {position})',
+    embedP = discord.Embed(title=f"Showing points for {user}", description=f'{round(points)} Points (Position: {position})',
                            colour=0xFFFA00)
     await ctx.reply(f"Showing points for {ctx.guild.get_member(user) or user}", embed=embedP)
 
@@ -829,11 +829,6 @@ def getPos(user):
         if i[0] == user:
             position = pos + 1
             return position
-        else:
-
-            if pos > 100:
-                return "100+"
-            pos = pos + 1
 
 @bot.command()
 async def gamble(ctx, pointsIn = ''):
