@@ -926,6 +926,7 @@ async def steal(ctx):
     steal_boost.append(0.0)
 
     await asyncio.sleep(3)
+    return
     steal_components = []
     steal_components.append(disnake.ui.Button(label='💰 Join Heist', custom_id='join', style=1, disabled=True))
     steal_components.append(disnake.ui.Button(label='💵 Boost Heist', custom_id='fund', style=3, disabled=True))
