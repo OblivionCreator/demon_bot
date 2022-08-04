@@ -2,11 +2,12 @@ import asyncio
 import glob
 import os
 import threading
+
 from disnake.ext import tasks
 from datetime import datetime
 from pathlib import Path
 import random
-import disnake as discord
+import disnake
 from disnake.ext import commands
 import ast
 import time
@@ -16,7 +17,7 @@ import sqlite3
 file = open("token.txt")
 token = file.read()
 
-intents = discord.Intents.default()
+intents = disnake.Intents.default()
 intents.members = True
 intents.message_content = True
 
@@ -131,7 +132,7 @@ async def _warnCheck(ctx, user):
         plural = ''
     else:
         plural = 's'
-    embedVar = discord.Embed(title=f"Warnings for user {userDisplay}",
+    embedVar = disnake.Embed(title=f"Warnings for user {userDisplay}",
                              description=f"{userDisplay} currently has {wC} warning{plural}", color=0xff0000)
 
     reasonCount = 0
@@ -326,7 +327,7 @@ async def _mute(ctx, user, *args):
             print(i)
             await member.remove_roles(i)
 
-    addRole = discord.utils.get(member.guild.roles, name="muted")
+    addRole = disnake.utils.get(member.guild.roles, name="muted")
     await member.add_roles(addRole)
 
     for file in glob.glob(f"mutes/{member.id}_*"):
@@ -395,12 +396,12 @@ async def unmute(ctx, user):
     for r in roles:
         print(r)
         rI = int(r)
-        rG = discord.utils.get(ctx.guild.roles, id=rI)
+        rG = disnake.utils.get(ctx.guild.roles, id=rI)
         print(rG)
         if rG:
             await member.add_roles(rG)
 
-    silRole = discord.utils.get(member.guild.roles, name="muted")
+    silRole = disnake.utils.get(member.guild.roles, name="muted")
     await member.remove_roles(silRole)
 
     f.close()
@@ -455,7 +456,7 @@ async def _stripRoles(ctx, user=0):
             print(i)
             await member.remove_roles(i)
 
-    addRole = discord.utils.get(member.guild.roles, name="rolebanned")
+    addRole = disnake.utils.get(member.guild.roles, name="rolebanned")
     await member.add_roles(addRole)
 
     for file in glob.glob(f"rolebans/{member.id}_*"):
@@ -522,12 +523,12 @@ async def _unStrip(ctx, user):
     for r in roles:
         print(r)
         rI = int(r)
-        rG = discord.utils.get(ctx.guild.roles, id=rI)
+        rG = disnake.utils.get(ctx.guild.roles, id=rI)
         print(rG)
         if rG:
             await member.add_roles(rG)
 
-    silRole = discord.utils.get(member.guild.roles, name="rolebanned")
+    silRole = disnake.utils.get(member.guild.roles, name="rolebanned")
     await member.remove_roles(silRole)
 
     f.close()
@@ -564,7 +565,7 @@ async def _clearwarns(ctx, user):
 
 
 @bot.command(name='announce', aliases=['a'])
-async def _announce(ctx, channel: discord.TextChannel, title, content):
+async def _announce(ctx, channel: disnake.TextChannel, title, content):
     '''Sends an announcement to the specified channel.
 
     For Example
@@ -581,7 +582,7 @@ async def _announce(ctx, channel: discord.TextChannel, title, content):
         return
 
     print(channel, title, content)
-    emA = discord.Embed(title=title,
+    emA = disnake.Embed(title=title,
                         description=content, color=0xff0000)
 
     await channel.send(embed=emA)
@@ -610,7 +611,6 @@ async def on_member_join(member):  # On Member Join - Shows how old their accoun
     if any(banword in member.name.lower() for banword in banwords):
         await member.guild.ban(member, reason='Autoban by Demon Bot. - Known Spambot/Raidbot/Scraper')
 
-
     data = f":inbox_tray: `{(datetime.now()).strftime('%Y-%m-%d %H:%M:%S')}` `[Member Join]`: {member} ({member.id}) {member.mention}"
 
     newM = ''
@@ -620,7 +620,7 @@ async def on_member_join(member):  # On Member Join - Shows how old their accoun
     if member.created_at.day > 7:
         newM = " :warning: New Account! "
 
-    embedV = discord.Embed(title=f"{member.guild.member_count} Members",
+    embedV = disnake.Embed(title=f"{member.guild.member_count} Members",
                            description=f"Account Created On: {member.created_at.strftime('%Y-%m-%d %H:%M:%S')}{newM}",
                            color=0x00ff00)
 
@@ -650,7 +650,7 @@ async def on_member_remove(member):  # On Member Leave - Tracks who leaves, show
     else:
         memTime = f"{weeks} Week(s), {days} Day(s), {hours} Hour(s) and {minutes} Minutes"
 
-    embedV = discord.Embed(title=f"{member.guild.member_count} Members",
+    embedV = disnake.Embed(title=f"{member.guild.member_count} Members",
                            description=f"Member for {memTime}",
                            color=0xff0000)
 
@@ -666,7 +666,7 @@ async def cmdLogger(member, activator, func, reason):
 
         print(func + funcD)
 
-    embLog = discord.Embed(title=f"{func}",
+    embLog = disnake.Embed(title=f"{func}",
                            description=f"User {member} was {funcD.lower()}ed by {activator} for:\n{reason}",
                            color=0xfd6a02)
 
@@ -718,10 +718,6 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    game = random.randint(1, 100)
-    if game <= 2 and message.content[:2] == 'o!':
-        await message.channel.send(f"You just lost the game, <@{message.author.id}>")
-
     author = message.author.id
 
     cur = conn.cursor()
@@ -738,7 +734,10 @@ async def on_message(message):
         conn.commit()
     else:
         ownerid, points, streak = authorData
-        points = points + (dPoints * streak)
+        if points > 100000:
+            dPoints = dPoints * 0.3
+            streak = 1
+        points = int(points + (dPoints * streak))
         if streak > 1:
             streak = streak - 1
         sql = '''UPDATE pointDB SET points = ? WHERE ownerid is ?'''
@@ -775,29 +774,29 @@ async def leaderboard(ctx):
 
     rawvalue = cur.fetchall()
 
-    embed = discord.Embed(title="Showing Points Leaderboard", description="Top 10 Earners", color=0x007DFF)
+    embed = disnake.Embed(title="Showing Points Leaderboard", description="Top 10 Earners", color=0x007DFF)
 
-    n=0
+    n = 0
     total = 0
     attempts = 0
     while total < 10:
         if attempts > 20:
             break
         n += 1
-        attempts +=1
+        attempts += 1
         print(n)
-        temp = rawvalue[n-1]
+        temp = rawvalue[n - 1]
         user = ctx.guild.get_member(temp[0])
         if user is None:
             print("none")
         else:
             total += 1
             attempts = 0
-            embed.add_field(name=f"Position {total}: {user}", value=f"{temp[1]} Points", inline=False)
+            embed.add_field(name=f"Position {total}: {user}", value=f"{int(temp[1])} Points", inline=False)
     await ctx.reply("Here are the current rankings.", embed=embed)
 
-def getPointData(user):
 
+def getPointData(user):
     cur = conn.cursor()
 
     sql = '''SELECT * FROM pointDB WHERE ownerid IS ?'''
@@ -809,7 +808,6 @@ def getPointData(user):
 
 @bot.command()
 async def points(ctx):
-
     if ctx.message.mentions:
         user = ctx.message.mentions[0]
     else:
@@ -819,7 +817,8 @@ async def points(ctx):
 
     oID, points, streak = getPointData(user.id)
 
-    embedP = discord.Embed(title=f"Showing points for {user}", description=f'{round(points)} Points (Position: {position})',
+    embedP = disnake.Embed(title=f"Showing points for {user}",
+                           description=f'{round(points)} Points (Position: {position})',
                            colour=0xFFFA00)
     await ctx.reply(f"Showing points for {ctx.guild.get_member(user) or user}", embed=embedP)
 
@@ -840,8 +839,9 @@ def getPos(user):
         if i[0] == user.id:
             return pos
 
+
 @bot.command()
-async def gamble(ctx, pointsIn = ''):
+async def gamble(ctx, pointsIn=''):
     if pointsIn.isnumeric():
         points = int(pointsIn)
     else:
@@ -857,28 +857,28 @@ async def gamble(ctx, pointsIn = ''):
     luck = random.randint(0, 100)
 
     if luck > 99:
-        winnings = (points * 5)-points
-        await ctx.reply(f":bank: ULTRA JACKPOT\nYOU WON: {winnings+points} Points!")
+        winnings = (points * 5) - points
+        await ctx.reply(f":bank: ULTRA JACKPOT\nYOU WON: {winnings + points} Points!")
         modifyPoints(user, winnings)
         return
     if luck > 92:
-        winnings = (points * 3)-points
-        await ctx.reply(f":moneybag: MEGA JACKPOT\nYOU WON: {round(winnings+points)} Points!")
+        winnings = (points * 3) - points
+        await ctx.reply(f":moneybag: MEGA JACKPOT\nYOU WON: {round(winnings + points)} Points!")
         modifyPoints(user, round(winnings))
         return
     if luck > 85:
-        winnings = (points * random.uniform(1.5, 2.5))-points
-        await ctx.reply(f":coin: WIN\nYOU WON: {round(winnings+points)} Points!")
+        winnings = (points * random.uniform(1.5, 2.5)) - points
+        await ctx.reply(f":coin: WIN\nYOU WON: {round(winnings + points)} Points!")
         modifyPoints(user, round(winnings))
         return
     if luck > 65:
-        winnings = (points * random.uniform(1.01, 1.5))-points
-        await ctx.reply(f":coin: WIN\nYOU WON: {round(winnings+points)} Points!")
+        winnings = (points * random.uniform(1.01, 1.5)) - points
+        await ctx.reply(f":coin: WIN\nYOU WON: {round(winnings + points)} Points!")
         modifyPoints(user, round(winnings))
         return
     if luck < 5:
         losing = points * 0.1
-        winnings = 0-(points - losing)
+        winnings = 0 - (points - losing)
         await ctx.reply(f":poop: UNLUCKY\nYOU LOST: {round(winnings)} Points!")
         modifyPoints(user, round(winnings))
         return
@@ -894,122 +894,121 @@ async def gamble(ctx, pointsIn = ''):
         modifyPoints(user, round(winnings))
         return
 
-currentlyDefending = []
-stealCooldown = []
 
+steal_active = False
+steal_value = 0
+steal_users = []
+steal_message = None
+steal_author = None
+steal_components = []
+steal_boost = []
+steal_time = 0
+
+
+@commands.is_owner()
+@commands.cooldown(1, 3600, commands.BucketType.guild)
 @bot.command()
 async def steal(ctx):
+    global steal_active, steal_value, steal_users, steal_message, steal_components, steal_author, steal_boost, steal_time
+    steal_value = random.randint(25, 35)
+    steal_author = ctx.author
+    steal_components.append(disnake.ui.Button(label='💰 Join Heist', custom_id='join', style=1))
+    steal_components.append(disnake.ui.Button(label='💵 Boost Heist', custom_id='fund', style=3))
 
-    global currentlyDefending
-    global stealCooldown
+    steal_time = time.time() + 300
 
-    if ctx.author.id in stealCooldown:
-        await ctx.reply("You can only steal points once every 3 hours!")
-        return
+    emb = disnake.Embed(title="A Heist for the Ages!",
+                        description=f"{ctx.author.name} has started planning a heist!\nCurrently the heist has a **{steal_value}%** chance of success and a **0%** Bonus Modifier.\nThe heist takes place <t:{int(steal_time)}:R>")
+    emb.add_field(name="Heist Members", value=f"{ctx.author.name} (0% Boost)")
+    steal_message = await ctx.reply(embed=emb, components=steal_components)
+    steal_active = True
+    steal_users.append(ctx.author)
+    steal_boost.append(0.0)
 
-    if not ctx.message.mentions:
-        await ctx.reply("You need to say who you're stealing from!")
-        return
+    await asyncio.sleep(3)
+    steal_components = []
+    steal_components.append(disnake.ui.Button(label='💰 Join Heist', custom_id='join', style=1, disabled=True))
+    steal_components.append(disnake.ui.Button(label='💵 Boost Heist', custom_id='fund', style=3, disabled=True))
+    await update_steal(title='Heist Complete!')
 
-    mention = ctx.message.mentions[0]
-    mentionid = mention.id
+    roll = random.randint(1, 100)
+    heist_success = "Successful!"
+    if roll > steal_value:
+        heist_success = "Failed!"
 
-    if mentionid == ctx.author.id:
-        await ctx.reply("You can't steal from yourself!")
-        return
+    success_msg = [
+        "You all manage to sneak into the Amazon Warehouse undetected, and make out with several boxes of loot!",
+        "After a raid on the  TLDG PayPal account, you all make out with an abundance of points!",
+        ""
+    ]
 
-    cur = conn.cursor()
-    sql = '''SELECT * from pointDB WHERE ownerid IS ?'''
-    cur.execute(sql, [mentionid])
+    mixed_msg = [
 
-    stolenStats = cur.fetchone()
+    ]
 
-    cur.execute(sql, [ctx.author.id])
+    failed_msg = [
 
-    userStats = cur.fetchone()
+    ]
 
-    if stolenStats is None:
-        await ctx.reply("That user does not seem to have any points to steal!")
-        return
+    # emb2 = disnake.Embed(title=f"Heist {heist_success}")
 
-    if mentionid in currentlyDefending:
-        await ctx.reply(f"{mention} is already being stolen from!")
-        return
+    # await steal_message.reply()
 
-    Vpoints = stolenStats[1]
-    Apoints = userStats[1]
 
-    stealEffective = 0.1
+@bot.event
+async def on_button_click(interaction):
+    global steal_active, steal_value, steal_users, steal_message, steal_data
+    if interaction.data.custom_id == 'join':
+        if interaction.author in steal_users:
+            await interaction.response.send_message("You've already joined this heist!", ephemeral=True)
+            return
+        steal_users.append(interaction.author)
+        steal_boost.append(0.0)
+        if steal_value > 90:
+            steal_value = 90
+            additional_success = 0
+            await interaction.response.send_message(
+                f"You've joined the heist!", ephemeral=True)
+        else:
+            additional_success = random.randint(3, 8)
+            steal_value += additional_success
+            if (steal_value - 90) > 0:
+                additional_success -= steal_value - 90
+                steal_value = 90
+            await interaction.response.send_message(
+                f"You've joined the heist and boosted its success chances by {additional_success}%!", ephemeral=True)
+    if interaction.data.custom_id == 'fund':
+        points = getPointData(interaction.author.id)[1]
+        if points < 500:
+            await interaction.response.send_message("You need at least 500 points to boost a heist!", ephemeral=True)
+            return
+        await interaction.response.send_message(
+            "You spend 500 Points equipping the crew, and boost the total heist income by 5%!", ephemeral=True)
+        steal_boost[steal_users.index(interaction.author)] += 0.05
+        print(steal_boost)
+    await update_steal()
 
-    if Vpoints < 300:
-        stealEffective = 0
-    elif Vpoints > 2*Apoints:
-        stealEffective = 0.20
-    elif Apoints > 2*Vpoints:
-        stealEffective = 0
-    elif Vpoints > 1.5*Apoints:
-        stealEffective = 0.15
-    elif Apoints > Vpoints:
-        stealEffective = 0.05
 
-    toSteal = round(Vpoints*stealEffective)
+async def update_steal(title=None, description=None):
+    global steal_active, steal_value, steal_users, steal_message, steal_components, steal_author, steal_boost, steal_time
 
-    if toSteal == 0:
-        await ctx.reply(f"You were unable to steal any points from {mention}")
-        return
+    total_bonus = 0
+    for i in steal_boost:
+        total_bonus += i * 100
+    emb = disnake.Embed(title=title or "A Heist for the Ages!",
+                        description=description or f"{steal_author.name} has started planning a heist!\nCurrently the heist has a **{steal_value}%** chance of success and a **{int(total_bonus)}%** Bonus Modifier.")
+    temp = ""
+    for i in steal_users:
+        temp = f"{temp}{i.name} ({int(steal_boost[steal_users.index(i)] * 100)}% Boost)\n"
+    emb.add_field(name="Heist Members", value=f"{temp}")
+    await steal_message.edit(embed=emb, components=steal_components)
 
-    await ctx.reply(f"Attempting to steal {toSteal} from {mention.mention}\n"
-                   f"If {mention} does not defend by doing `o!defend` within 1 hour, the points will be yours!")
-
-    try:
-        await mention.send("Watch Out!\n"
-                           f"{ctx.author.mention} is trying to steal {toSteal} of your points in {ctx.guild}! To prevent them, type `o!defend` in {ctx.guild}")
-    except:
-        pass
-
-    currentlyDefending.append(mentionid)
-    stealCooldown.append(ctx.author.id)
-    await thiefHandler(ctx.author, mention, toSteal)
-    await thiefCooldown(ctx.author)
 
 def remove_values_from_list(the_list, val):
-   return [value for value in the_list if value != val]
+    return [value for value in the_list if value != val]
 
-async def thiefCooldown(author):
-
-    asyncio.sleep(7200)
-    stealCooldown.remove(author.id)
-
-async def thiefHandler(author, mention, toSteal):
-
-    await asyncio.sleep(3600)
-
-    if mention.id not in currentlyDefending:
-        await author.send(f"Unfortunately, {mention} defended themselves in time and prevented you from stealing their points!")
-        return
-
-    oid, points, streak = getPointData()
-
-    if points < toSteal:
-        toSteal = points
-
-    modifyPoints(mention.id, (0-toSteal))
-    modifyPoints(author.id, round(0.9*toSteal))
-
-
-
-    try:
-        await author.send(f"Successfully stole {toSteal} points from {mention}!\n{round(toSteal*0.1)} points were lost during the heist!")
-    except:
-        pass
-
-    try:
-        await mention.send(f"Oh No! {author} stole {toSteal} points from you!")
-    except:
-        pass
 
 def modifyPoints(user, points):
-
     user, oldPoints, streak = getPointData(user)
 
     newPoints = points + oldPoints
@@ -1019,9 +1018,9 @@ def modifyPoints(user, points):
     cur.execute(sql, [newPoints, user])
     conn.commit()
 
+
 @bot.command()
 async def defend(ctx):
-
     global currentlyDefending
 
     if ctx.author.id in currentlyDefending:
@@ -1031,18 +1030,19 @@ async def defend(ctx):
         await ctx.reply("You are not currently being stolen from!")
     return
 
+
 raffleEntries = []
 raffleOngoing = False
 
-async def job():
 
+async def job():
     global raffleEntries
     global raffleOngoing
 
     channel = bot.get_channel(765310903871733783)
     await channel.send("The Daily Raffle is starting! The raffle will end in 6 hours.\n"
-                 "Each Raffle entry costs 1000 Points. You may buy up to 100 entries to any given raffle.\n"
-                 "To enter, do o!raffle <Number of Entries>")
+                       "Each Raffle entry costs 1000 Points. You may buy up to 100 entries to any given raffle.\n"
+                       "To enter, do o!raffle <Number of Entries>")
 
     raffleEntries = []
     raffleOngoing = True
@@ -1059,21 +1059,22 @@ async def job():
     iterations = 0
 
     while not validWinner:
-        winner = random.randint(0, listlen-1)
+        winner = random.randint(0, listlen - 1)
         if winner != 312717190128467969 or iterations > 100:
             validWinner = True
         iterations += 1
     winnerID = raffleEntries[winner]
 
-    await channel.send(f"Congratulations to <@{winnerID}> on winning the daily raffle!\nThey have won {listlen*1000} points!")
-    modifyPoints(winnerID, (listlen*1000))
+    await channel.send(
+        f"Congratulations to <@{winnerID}> on winning the daily raffle!\nThey have won {listlen * 1000} points!")
+    modifyPoints(winnerID, (listlen * 1000))
 
     raffleOngoing = False
     raffleEntries = []
 
+
 @bot.command()
 async def raffle(ctx, entries=''):
-
     '''o!raffle <entries> - Each entry costs 1000 points. You can purchase up to 100 entries, and can only enter once!'''
 
     global raffleEntries
@@ -1083,7 +1084,6 @@ async def raffle(ctx, entries=''):
         if i == ctx.author.id:
             await ctx.reply("You are already entered in the raffle!")
             return
-
 
     if not raffleOngoing:
         await ctx.reply("There is not an ongoing raffle!")
@@ -1102,21 +1102,21 @@ async def raffle(ctx, entries=''):
     if entryNo > 100:
         entryNo = 100
 
-    if (entryNo*1000) > points:
-        await ctx.reply("You do not have enough points to buy that many entries!\nRemember, each entry costs 1000 Points!")
+    if (entryNo * 1000) > points:
+        await ctx.reply(
+            "You do not have enough points to buy that many entries!\nRemember, each entry costs 1000 Points!")
         return
 
     for i in range(entryNo):
         raffleEntries.append(ctx.author.id)
 
-    modifyPoints(ctx.author.id, 0-(entryNo*1000))
+    modifyPoints(ctx.author.id, 0 - (entryNo * 1000))
 
     await ctx.reply(f"You have successfully bought {entryNo} entries to the raffle!")
 
 
 @bot.command()
 async def send(ctx, mention, points):
-
     if ctx.message.mentions:
         uID = ctx.message.mentions[0].id
     else:
@@ -1136,48 +1136,19 @@ async def send(ctx, mention, points):
     recID, recPo, recSt = getPointData(uID)
 
     if recID == None:
-        await ctx.reply("I do not recognise that user! If they are new, they will need to send a message before they can receive any points!")
+        await ctx.reply(
+            "I do not recognise that user! If they are new, they will need to send a message before they can receive any points!")
         return
 
     if points > senderPo:
         await ctx.reply("You do not have that many points to send!")
         return
 
-    modifyPoints(ctx.author.id, (0-points))
+    modifyPoints(ctx.author.id, (0 - points))
     modifyPoints(uID, points)
 
     await ctx.reply(f"Successfully sent {points} Points to {bot.get_user(uID).mention}!")
 
-roles = []
-
-@bot.command()
-async def shopSetup(ctx):
-
-    global roles
-
-    with open("rolenames.txt", encoding="utf-8") as f:
-        roles = f.read().splitlines()
-
-    print(roles)
-
-    select1 = random.randint(1, (len(roles)))
-
-@bot.command()
-async def shop(ctx):
-
-    shopE = discord.Embed(name='', description='', colour='0x450083')
-
-
-@bot.command()
-@commands.is_owner()
-async def createroles(ctx):
-    guild = ctx.guild
-
-    with open("rolenames.txt", encoding="utf-8") as f:
-        roles = f.read().splitlines()
-
-    for i in roles:
-        await guild.create_role(name=i)
 
 @bot.command()
 @commands.is_owner()
@@ -1195,7 +1166,7 @@ async def addpoints(ctx, points):
 async def removepoints(ctx, points):
     if points.isnumeric():
         points = int(points)
-        modifyPoints(ctx.author.id, 0-points)
+        modifyPoints(ctx.author.id, 0 - points)
         await ctx.reply(f"You removed {points} Points from yourself!")
         return
     await ctx.reply("Not a valid number of points to remove!")
@@ -1206,6 +1177,7 @@ async def forceRaffle(ctx):
     if ctx.author.id == 110399543039774720:
         await job()
 
+
 @tasks.loop(seconds=60)
 async def startRaffle():
     t = datetime.now()
@@ -1213,10 +1185,12 @@ async def startRaffle():
     if c_t == "00:00":
         await job()
 
+
 @bot.event
 async def on_ready():
     print("Bot Online!")
     resStreak.start()
     startRaffle.start()
+
 
 bot.run(token)
