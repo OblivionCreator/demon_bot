@@ -861,28 +861,28 @@ async def gamble(ctx, pointsIn=''):
         await ctx.reply(f":bank: ULTRA JACKPOT\nYOU WON: {winnings + points} Points!")
         modifyPoints(user, winnings)
         return
-    if luck > 92:
+    if luck > 95:
         winnings = (points * 3) - points
         await ctx.reply(f":moneybag: MEGA JACKPOT\nYOU WON: {round(winnings + points)} Points!")
         modifyPoints(user, round(winnings))
         return
-    if luck > 85:
+    if luck > 89:
         winnings = (points * random.uniform(1.5, 2.5)) - points
         await ctx.reply(f":coin: WIN\nYOU WON: {round(winnings + points)} Points!")
         modifyPoints(user, round(winnings))
         return
-    if luck > 65:
+    if luck > 75:
         winnings = (points * random.uniform(1.01, 1.5)) - points
         await ctx.reply(f":coin: WIN\nYOU WON: {round(winnings + points)} Points!")
         modifyPoints(user, round(winnings))
         return
-    if luck < 5:
+    if luck < 15:
         losing = points * 0.1
         winnings = 0 - (points - losing)
         await ctx.reply(f":poop: UNLUCKY\nYOU LOST: {round(winnings)} Points!")
         modifyPoints(user, round(winnings))
         return
-    if luck < 2:
+    if luck < 10:
         winnings = 0 - points
         await ctx.reply(f":poop: UNLUCKY\nYou lost all your points!")
         modifyPoints(user, round(winnings))
